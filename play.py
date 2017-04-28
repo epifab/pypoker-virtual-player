@@ -24,10 +24,6 @@ if __name__ == '__main__':
 
         logger = logging.getLogger("player-{}".format(player_id))
         logger.setLevel(logging.INFO)
-        logger.addHandler(logging.handlers.WatchedFileHandler(
-            filename="logs/bet-strategy-virtual-player-{}.log".format(player_id),
-            mode='a'
-        ))
 
         player = Player(
             id="hal-{}".format(str(uuid.uuid4())),
