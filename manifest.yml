@@ -1,0 +1,8 @@
+---
+applications:
+- name: hackday-poker-player
+  memory: 128M
+  disk_quota: 512M
+  command: python play.py
+  env:
+    REDIS_URL:
