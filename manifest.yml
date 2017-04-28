@@ -6,4 +6,5 @@ applications:
   no-route: true
   command: python play.py
   env:
+    BET_STRATEGY: "smart"
     REDIS_URL:
