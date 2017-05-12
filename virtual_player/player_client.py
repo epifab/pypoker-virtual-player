@@ -1,7 +1,7 @@
 import time
 
 from virtual_player.channel import MessageFormatError
-from virtual_player.channel_redis import ChannelRedis, MessageQueue, MessageFormatError
+from virtual_player.channel_redis import ChannelRedis, MessageQueue
 
 
 class PlayerClientConnector:
@@ -36,7 +36,7 @@ class PlayerClientConnector:
         # Reading connection response
         connection_message = server_channel.recv_message(time.time() + PlayerClientConnector.CONNECTION_TIMEOUT)
         MessageFormatError.validate_message_type(connection_message, "connect")
-        self._logger.info("{}: connected to server {}".format(player, connection_message["server_id"]))
+        self._logger.info("Connected to server {}".format(connection_message["server_id"]))
         return PlayerClient(player, connection_message, server_channel)
 
 

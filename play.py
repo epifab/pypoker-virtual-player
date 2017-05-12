@@ -1,13 +1,44 @@
 #!/env/python
 import logging.handlers
 import os
+import random
+import string
 import uuid
 
 import redis
 
 from virtual_player.player_client import PlayerClientConnector
-from virtual_player.bet_strategy import HoldemPlayerClient, get_random_name, stategy_factory
+from virtual_player.bet_strategy import HoldemPlayerClient, stategy_factory
 from virtual_player.player import Player
+
+
+def get_random_string(length=8):
+    return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(length))
+
+
+def play_game():
+    pid = get_random_string()
+    player_id = "hal-{}".format(pid)
+    player_name = "Hal {}".format(pid)
+
+    logger = logging.getLogger("player.{}".format(player_id))
+    logger.setLevel(logging.INFO)
+
+    player_connector = PlayerClientConnector(redis, "texas-holdem-poker:lobby", logger)
+
+    player = Player(
+        id="hal-{}".format(str(uuid.uuid4())),
+        name=player_name,
+        money=1000.0
+    )
+    bot = HoldemPlayerClient(
+        player_connector=player_connector,
+        player=player,
+        bet_strategy=stategy_factory(strategy=bet_strategy, logger=logger),
+        logger=logger
+    )
+
+    bot.play()
 
 
 if __name__ == '__main__':
@@ -19,24 +50,4 @@ if __name__ == '__main__':
     bet_strategy = os.getenv("BET_STRATEGY", "smart")
 
     while True:
-        player_id = str(uuid.uuid4())
-
-        logger = logging.getLogger("player-{}".format(player_id))
-        logger.setLevel(logging.INFO)
-
-        player_connector = PlayerClientConnector(redis, "texas-holdem-poker:lobby", logger)
-
-        player = Player(
-            id="hal-{}".format(str(uuid.uuid4())),
-            name=get_random_name(),
-            money=1000.0
-        )
-
-        virtual_player = HoldemPlayerClient(
-            player_connector=player_connector,
-            player=player,
-            bet_strategy=stategy_factory(strategy=bet_strategy, logger=logger),
-            logger=logger
-        )
-
-        virtual_player.play()
+        play_game()

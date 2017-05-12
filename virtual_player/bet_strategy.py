@@ -11,21 +11,6 @@ from virtual_player.player import Player
 from virtual_player.score_detector import HoldemPokerScoreDetector, HandEvaluator
 
 
-def get_random_name():
-    names = [
-        "Johnny", "Thomas", "Walter", "Brian", "Doyle", "Bobby", "Hal", "Stu", "Jack", "Tom", "Jack", "Bill", "Barry",
-        "Phil", "Mansour", "Brad", "Hamid", "Jim", "Russ", "Dan", "Huck", "Scotty", "Noel", "Chris", "Carlos", "Robert",
-        "Chris", "Greg", "Joe", "Jamie", "Jerry", "Peter", "Joe", "Jonathan", "Pius", "Greg", "Ryan", "Martin", "Joe",
-    ]
-    surnames = [
-        "Moss", "Preston", "Pearson", "Roberts", "Brunson", "Baldwin", "Fowler", "Ungar", "Straus", "McEvoy", "Keller",
-        "Smith", "Johnston", "Chan", "Hellmuth", "Matloubi", "Daugherty", "Dastmalchi", "Bechtel", "Hamilton",
-        "Harrington", "Seed", "Nguyen", "Furlong", "Ferguson", "Mortensen", "Varkonyi", "Moneymaker", "Raymer",
-        "Hachem", "Gold", "Yang", "Eastgate", "Cada", "Duhamel", "Heinz", "Merson", "Riess", "Jacobson"
-    ]
-    return random.choice(names) + " " + random.choice(surnames)
-
-
 class CardsFormatter:
     def __init__(self, compact=True):
         self.compact = compact
@@ -227,10 +212,10 @@ class HoldemPlayerClient:
 
 class RandomBetStrategy:
     def __init__(self, fold_cases=2, call_cases=5, raise_cases=3):
-        self._bet_cases = (["fold"] * fold_cases) + (["call"] * call_cases) + (["raise"] * raise_cases)
+        self.bet_cases = (["fold"] * fold_cases) + (["call"] * call_cases) + (["raise"] * raise_cases)
 
     def bet(self, me, game_state, bets, min_bet, max_bet):
-        decision = random.choice(self._bet_cases)
+        decision = random.choice(self.bet_cases)
 
         if decision == "call" or (decision == "fold" and not min_bet):
             return min_bet
@@ -247,7 +232,6 @@ class SmartBetStrategy:
     def __init__(self, hand_evaluator, logger):
         self.hand_evaluator = hand_evaluator
         self.logger = logger
-        self.logger.info("using smart strategy...")
 
     @staticmethod
     def choice(population, weights):
