@@ -258,13 +258,6 @@ class HoldemPlayerClient:
                     ))
 
 
-def stategy_factory(strategy="smart", logger=None):
-
-    if strategy == "smart": 
-        return SmartBetStrategy(HandEvaluator(HoldemPokerScoreDetector()), logger)
-    else: 
-        return RandomBetStrategy(call_cases=7, fold_cases=2, raise_cases=1)
-
 class RandomBetStrategy:
     def __init__(self, fold_cases=2, call_cases=5, raise_cases=3):
         self._bet_cases = (["fold"] * fold_cases) + (["call"] * call_cases) + (["raise"] * raise_cases)
@@ -373,3 +366,13 @@ class SmartBetStrategy:
 
         self.logger.info("{}: I decided to {} (${:.2f})".format(me, choice, bet))
         return bet
+
+
+BET_STRATEGIES = {
+    "smart": lambda logger: SmartBetStrategy(hand_evaluator=HandEvaluator(HoldemPokerScoreDetector()), logger=logger),
+    "random": lambda logger: RandomBetStrategy(call_cases=7, fold_cases=2, raise_cases=1)
+}
+
+
+def stategy_factory(strategy, logger):
+    return BET_STRATEGIES[strategy](logger)

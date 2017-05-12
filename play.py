@@ -6,10 +6,9 @@ import uuid
 import redis
 
 from virtual_player.player_client import PlayerClientConnector
-from virtual_player.bet_strategy import (SmartBetStrategy, RandomBetStrategy,
-    HoldemPlayerClient, get_random_name, stategy_factory)
+from virtual_player.bet_strategy import HoldemPlayerClient, get_random_name, stategy_factory
 from virtual_player.player import Player
-from virtual_player.score_detector import HandEvaluator, HoldemPokerScoreDetector
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG if 'DEBUG' in os.environ else logging.INFO)
@@ -36,7 +35,6 @@ if __name__ == '__main__':
         virtual_player = HoldemPlayerClient(
             player_connector=player_connector,
             player=player,
-            # bet_strategy=RandomBetStrategy(call_cases=7, fold_cases=2, raise_cases=1),
             bet_strategy=stategy_factory(strategy=bet_strategy, logger=logger),
             logger=logger
         )
