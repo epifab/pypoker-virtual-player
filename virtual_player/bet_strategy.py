@@ -299,83 +299,47 @@ class SmartBetStrategy:
         return population[idx]
 
     def bet(self, me, game_state, bets, min_bet, max_bet):
-        num_shared_cards = len(game_state.scores.shared_cards)
-        num_followers = game_state.players.count_active_with_money() - (1 if me.money else 0)
-        max_raise = max_bet - min_bet
         game_pot = game_state.pot + sum(bets.values())
 
         cards_formatter = CardsFormatter(compact=False)
+
+        # Logging game status
         self.logger.info(u"{}: My cards:\n{}".format(
             me,
             cards_formatter.format(game_state.scores.player_cards(me.id))
         ))
-        if num_shared_cards:
+        if game_state.scores.shared_cards:
             self.logger.info(u"{}: Board cards:\n{}".format(
                 me,
                 cards_formatter.format(game_state.scores.shared_cards)
             ))
         self.logger.info("{}: Min bet: ${:.2f} - Max bet: ${:.2f}".format(me, min_bet, max_bet))
-        self.logger.info("{}: Max raise: ${:.2f}".format(me, max_raise))
         self.logger.info("{}: Pots: ${:.2f}".format(me, game_pot))
-        self.logger.info("{}: Number of followers: {}".format(me, num_followers))
 
-        if game_state.state == HoldemGameState.STATE_PREFLOP:
-            hand_strength = self.hand_evaluator.hand_strength(
-                my_cards=game_state.scores.player_cards(me.id),
-                board=game_state.scores.shared_cards,
-                num_followers=num_followers,
-                timeout=5
-            )
-        else:
-            hand_strength = self.hand_evaluator.hand_strength(
-                my_cards=game_state.scores.player_cards(me.id),
-                board=game_state.scores.shared_cards,
-                num_followers=num_followers,
-                timeout=8
-            )
+        hand_strength = self.hand_evaluator.hand_strength(
+            my_cards=game_state.scores.player_cards(me.id),
+            board=game_state.scores.shared_cards
+        )
 
-        self.logger.info("{}: Hand strength: {}".format(me, hand_strength))
-
-        # pot_odds = min_bet / (min_bet + game_pot)
-        #
-        # rate_of_return = hand_strength / pot_odds
-        # self.logger.info("{}: Rate of return: {}".format(me, rate_of_return))
+        self.logger.info("{}: HAND STRENGTH: {}".format(me, hand_strength))
 
         choices = ["fold", "call", "raise"]
 
-        # Rate between big blind and the call bet
-        call_rate = game_state.big_blind / (game_state.big_blind + min_bet)
-        # Between 0 and 1: 0: not great to call, 1: very valuable
-        pot_size = game_pot / game_state.big_blind
-
         if hand_strength < 0.20:
-            # Mostly fold
-            if call_rate > 0.85:
-                weights = [0.65, 0.30, 0.05]
-            elif call_rate > 0.5:
-                weights = [0.80, 0.15, 0.05]
-            else:
-                weights = [0.95, 0.00, 0.05]
+            # Very bad hand
+            weights = [0.85, 0.10, 0.05]    # Bluff
         elif hand_strength < 0.40:
-            # Mostly fold/call
-            if call_rate > 0.85:
-                weights = [0.45, 0.50, 0.05]
-            elif call_rate > 0.5:
-                weights = [0.60, 0.35, 0.05]
-            else:
-                weights = [0.75, 0.20, 0.05]
+            # Bad hand
+            weights = [0.60, 0.35, 0.05]    # Bluff
         elif hand_strength < 0.60:
-            # Mostly call
-            if call_rate > 0.85:
-                weights = [0.00, 0.70, 0.30]
-            elif call_rate > 0.5:
-                weights = [0.15, 0.65, 0.20]
-            else:
-                weights = [0.40, 0.55, 0.05]
+            # Ok hand
+            weights = [0.15, 0.65, 0.20]
         elif hand_strength < 0.80:
+            # Good hand
             weights = [0.00, 0.45, 0.55]
         else:
-            weights = [0.00, 0.25, 0.75]
+            # Very good hand
+            weights = [0.00, 0.20, 0.85]
 
         self.logger.info("{}: Fold: {}%, Call: {}%, Raise: {}%".format(me, weights[0], weights[1], weights[2]))
 
@@ -385,14 +349,19 @@ class SmartBetStrategy:
 
         choice = self.choice(choices, weights)
 
-        if choice == "call" or (choice == "fold" and min_bet == 0.0) or (choice == "raise" and max_raise == 0.0):
-            bet = min_bet
-        elif choice == "fold":
+        if choice == "fold" and min_bet == 0.0:
+            # Do not fold if it's free to call
+            choice = "call"
+        if choice == "raise" and min_bet == max_bet:
+            # Just call if you cannot raise
+            choice = "call"
+
+        if choice == "fold":
             bet = -1
+        elif choice == "call":
+            bet = min_bet
         else:
-            # Raise
-            raises = 1 + int(round(max_raise / game_state.big_blind))
-            bet = min_bet + (float(random.choice(range(1, raises + 1))) / float(raises) * max_raise)
+            bet = min(max_bet, game_pot)
 
         self.logger.info("{}: I decided to {} (${:.2f})".format(me, choice, bet))
         return bet
