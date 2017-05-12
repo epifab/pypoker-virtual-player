@@ -71,18 +71,12 @@ class HoldemPlayerClient:
         self._bet_strategy = bet_strategy
         self._logger = logger
 
-    def play_forever(self):
-        while True:
-            self.play()
-            time.sleep(5)
-
     def play(self):
         # Connecting the player
         server_channel = self._player_connector.connect(self._player, str(uuid.uuid4()))
 
         cards_formatter = CardsFormatter(compact=True)
 
-        room_players = {}
         game_state = None
 
         while True:
@@ -101,22 +95,13 @@ class HoldemPlayerClient:
                     server_channel.send_message({"message_type": "pong"})
 
                 elif message["message_type"] == "room-update":
-                    for player in message["players"].values():
-                        if player["id"] not in room_players:
-                            room_players[player["id"]] = Player(
-                                id=player["id"],
-                                name=player["name"],
-                                money=player["money"]
-                            )
-
-                    if message["event"] == "player-removed":
-                        del room_players[message["player_id"]]
+                    pass
 
                 elif message["message_type"] == "game-update":
                     if message["event"] == "new-game":
                         game_state = HoldemGameState(
                             players=GamePlayers([
-                                room_players[player["id"]]
+                                Player(id=player["id"], name=player["name"], money=player["money"])
                                 for player in message["players"]
                             ]),
                             scores=GameScores(HoldemPokerScoreDetector()),
