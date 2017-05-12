@@ -198,7 +198,7 @@ class HoldemPlayerClient:
                         for player_id in message["pot"]["winner_ids"]:
                             player = game_state.players.get(player_id)
                             player.add_money(message["pot"]["money_split"])
-                            self._logger.info("{} won ${:.2f}".format(
+                            self._logger.info("Player {} won ${:.2f}".format(
                                 player,
                                 message["pot"]["money_split"]
                             ))
