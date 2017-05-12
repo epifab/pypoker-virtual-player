@@ -6,16 +6,18 @@ import uuid
 import redis
 
 from virtual_player.player_client import PlayerClientConnector
-from virtual_player.bet_strategy import SmartBetStrategy, HoldemPlayerClient, get_random_name
+from virtual_player.bet_strategy import (SmartBetStrategy, RandomBetStrategy,
+    HoldemPlayerClient, get_random_name, stategy_factory)
 from virtual_player.player import Player
 from virtual_player.score_detector import HandEvaluator, HoldemPokerScoreDetector
-
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG if 'DEBUG' in os.environ else logging.INFO)
 
     redis_url = os.environ["REDIS_URL"]
     redis = redis.from_url(redis_url)
+
+    bet_strategy = os.getenv("BET_STRATEGY", "smart")
 
     player_connector = PlayerClientConnector(redis, "texas-holdem-poker:lobby", logging)
 
@@ -35,7 +37,7 @@ if __name__ == '__main__':
             player_connector=player_connector,
             player=player,
             # bet_strategy=RandomBetStrategy(call_cases=7, fold_cases=2, raise_cases=1),
-            bet_strategy=SmartBetStrategy(HandEvaluator(HoldemPokerScoreDetector()), logger),
+            bet_strategy=stategy_factory(strategy=bet_strategy, logger=logger),
             logger=logger
         )
 
