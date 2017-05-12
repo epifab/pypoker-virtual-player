@@ -73,7 +73,7 @@ class HoldemPlayerClient:
 
     def play(self):
         # Connecting the player
-        server_channel = self._player_connector.connect(self._player, str(uuid.uuid4()))
+        server_channel = self._player_connector.connect(player=self._player, session_id=str(uuid.uuid4()))
 
         cards_formatter = CardsFormatter(compact=True)
 
@@ -152,6 +152,11 @@ class HoldemPlayerClient:
                                 bets=message["bets"]
                             )
 
+                            choice = "Fold" if bet == -1 \
+                                else ("Call ({:.2f})" if bet == message["min_bet"] else "Raise (${:.2f})").format(bet)
+
+                            self._logger.info("Decision: {}".format(choice))
+
                             server_channel.send_message({
                                 "message_type": "bet",
                                 "bet": bet
@@ -209,8 +214,7 @@ class RandomBetStrategy:
             return -1
 
         else:
-            max_raise = max_bet - min_bet
-            return min_bet + math.floor(max_raise * random.random())
+            return min(max_bet, game_state.pot)
 
 
 class SmartBetStrategy:
@@ -296,7 +300,6 @@ class SmartBetStrategy:
         else:
             bet = min(max_bet, game_pot)
 
-        self.logger.info("Decision: {} ({})".format(choice, "${:.2f}".format(bet) if bet >= 0 else "-1"))
         return bet
 
 

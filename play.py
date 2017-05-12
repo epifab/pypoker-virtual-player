@@ -27,7 +27,7 @@ def play_game():
     player_connector = PlayerClientConnector(redis, "texas-holdem-poker:lobby", logger)
 
     player = Player(
-        id="hal-{}".format(str(uuid.uuid4())),
+        id=player_id,
         name=player_name,
         money=1000.0
     )
