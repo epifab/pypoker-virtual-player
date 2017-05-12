@@ -18,13 +18,13 @@ if __name__ == '__main__':
 
     bet_strategy = os.getenv("BET_STRATEGY", "smart")
 
-    player_connector = PlayerClientConnector(redis, "texas-holdem-poker:lobby", logging)
-
     while True:
         player_id = str(uuid.uuid4())
 
         logger = logging.getLogger("player-{}".format(player_id))
         logger.setLevel(logging.INFO)
+
+        player_connector = PlayerClientConnector(redis, "texas-holdem-poker:lobby", logger)
 
         player = Player(
             id="hal-{}".format(str(uuid.uuid4())),

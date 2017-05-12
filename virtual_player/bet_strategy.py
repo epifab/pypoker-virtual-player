@@ -105,13 +105,11 @@ class HoldemPlayerClient:
                 message = server_channel.recv_message(time.time() + 120)  # Wait for max 2 minutes
             except MessageTimeout:
                 server_channel.send_message({"message_type": "disconnect"})
-                self._logger.info("{}: Server did not send anything in 2 minutes: disconnecting".format(
-                    self._player
-                ))
+                self._logger.warning("Server did not send anything in 2 minutes: disconnecting")
                 break
             else:
                 if message["message_type"] == "disconnect":
-                    self._logger.info("{}: Disconnected from the server".format(self._player))
+                    self._logger.warning("Disconnected from the server")
                     break
 
                 elif message["message_type"] == "ping":
@@ -141,51 +139,41 @@ class HoldemPlayerClient:
                             big_blind=message["big_blind"],
                             small_blind=message["small_blind"]
                         )
-                        self._logger.info(u"{}: New game: {}".format(self._player, message["game_id"]))
+                        self._logger.info("New game: {}".format(message["game_id"]))
 
                     elif message["event"] == "game-over":
                         game_state = None
-                        self._logger.info(u"{}: Game over".format(self._player))
+                        self._logger.info("Game over")
 
                     elif message["event"] == "cards-assignment":
                         cards = [Card(card[0], card[1]) for card in message["cards"]]
                         game_state.scores.assign_cards(self._player.id, cards)
-                        self._logger.info(u"{}: Cards received: {}".format(
-                            self._player,
-                            cards_formatter.format(cards)
-                        ))
+                        self._logger.info("Cards received: {}".format(cards_formatter.format(cards)))
 
                     elif message["event"] == "showdown":
                         for player_id in message["players"]:
                             cards = [Card(card[0], card[1]) for card in message["players"][player_id]["cards"]]
                             game_state.scores.assign_cards(player_id, cards)
-                            self._logger.info(u"{}: {} cards: {}".format(
-                                self._player,
+                            self._logger.info("Player {} cards: {}".format(
                                 game_state.players.get(player_id),
                                 cards_formatter.format(cards))
                             )
 
                     elif message["event"] == "fold":
                         game_state.players.fold(message["player"]["id"])
-                        self._logger.info(u"{}: {} fold".format(
-                            self._player,
-                            game_state.players.get(message["player"]["id"])
-                        ))
+                        self._logger.info("Player {} fold".format(game_state.players.get(message["player"]["id"])))
 
                     elif message["event"] == "dead-player":
                         game_state.players.remove(message["player"]["id"])
-                        self._logger.info(u"{}: {} left".format(
-                            self._player,
-                            game_state.players.get(message["player"]["id"])
-                        ))
+                        self._logger.info("Player {} left".format(game_state.players.get(message["player"]["id"])))
 
                     elif message["event"] == "pots-update":
                         game_state.pot = sum([pot["money"] for pot in message["pots"]])
-                        self._logger.info(u"{}: Jackpot: ${:.2f}".format(self._player, game_state.pot))
+                        self._logger.info(u"Jackpot: ${:.2f}".format(game_state.pot))
 
                     elif message["event"] == "player-action" and message["action"] == "bet":
                         if message["player"]["id"] == self._player.id:
-                            self._logger.info(u"{}: My turn to bet".format(self._player))
+                            self._logger.info("My turn to bet".format(self._player))
                             bet = self._bet_strategy.bet(
                                 me=self._player,
                                 game_state=game_state,
@@ -198,26 +186,16 @@ class HoldemPlayerClient:
                                 "message_type": "bet",
                                 "bet": bet
                             })
-                            if bet == -1:
-                                self._logger.info("{}: Will fold".format(self._player))
-                            elif bet == 0:
-                                self._logger.info("{}: Will check".format(self._player))
-                            elif bet == message["min_bet"]:
-                                self._logger.info("{}: Will call ${:.2f}".format(self._player, bet))
-                            elif bet == message["max_bet"]:
-                                self._logger.info("{}: Will raise to ${:.2f}".format(self._player, bet))
 
                         else:
-                            self._logger.info(u"{}: waiting for {} to bet...".format(
-                                self._player,
+                            self._logger.info("Waiting for {} to bet...".format(
                                 game_state.players.get(message["player"]["id"])
                             ))
 
                     elif message["event"] == "bet":
                         player = game_state.players.get(message["player"]["id"])
                         player.take_money(message["bet"])
-                        self._logger.info(u"{}: {} bet ${:.2f} ({})".format(
-                            self._player,
+                        self._logger.info("Player {} bet ${:.2f} ({})".format(
                             player,
                             message["bet"],
                             message["bet_type"]
@@ -226,36 +204,25 @@ class HoldemPlayerClient:
                     elif message["event"] == "shared-cards":
                         new_cards = [Card(card[0], card[1]) for card in message["cards"]]
                         game_state.scores.add_shared_cards(new_cards)
-                        self._logger.info(u"{}: Shared cards: {}".format(
-                            self._player,
+                        self._logger.info("Shared cards: {}".format(
                             cards_formatter.format(game_state.scores.shared_cards)
                         ))
 
                     elif message["event"] == "winner-designation":
-                        self._logger.info("{}: ${:.2f} pot winners designation".format(
-                            self._player,
-                            message["pot"]["money"]
-                        ))
+                        self._logger.info("${:.2f} pot winners designation".format(message["pot"]["money"]))
                         for player_id in message["pot"]["winner_ids"]:
                             player = game_state.players.get(player_id)
                             player.add_money(message["pot"]["money_split"])
-                            self._logger.info("{}: {} won ${:.2f}".format(
-                                self._player,
+                            self._logger.info("{} won ${:.2f}".format(
                                 player,
                                 message["pot"]["money_split"]
                             ))
 
                     else:
-                        self._logger.error("{}: Event {} not recognised".format(
-                            self._player,
-                            message["event"]
-                        ))
+                        self._logger.error("Event {} not recognised".format(message["event"]))
 
                 else:
-                    self._logger.error("{}: Message type {} not recognised".format(
-                        self._player,
-                        message["message_type"]
-                    ))
+                    self._logger.error("Message type {} not recognised".format(message["message_type"]))
 
 
 class RandomBetStrategy:
@@ -305,24 +272,20 @@ class SmartBetStrategy:
         cards_formatter = CardsFormatter(compact=False)
 
         # Logging game status
-        self.logger.info(u"{}: My cards:\n{}".format(
-            me,
-            cards_formatter.format(game_state.scores.player_cards(me.id))
-        ))
+        self.logger.info("My cards:\n{}".format(cards_formatter.format(game_state.scores.player_cards(me.id))))
+
         if game_state.scores.shared_cards:
-            self.logger.info(u"{}: Board cards:\n{}".format(
-                me,
-                cards_formatter.format(game_state.scores.shared_cards)
-            ))
-        self.logger.info("{}: Min bet: ${:.2f} - Max bet: ${:.2f}".format(me, min_bet, max_bet))
-        self.logger.info("{}: Pots: ${:.2f}".format(me, game_pot))
+            self.logger.info("Board cards:\n{}".format(cards_formatter.format(game_state.scores.shared_cards)))
+
+        self.logger.info("Min bet: ${:.2f} - Max bet: ${:.2f}".format(min_bet, max_bet))
+        self.logger.info("Pots: ${:.2f}".format(game_pot))
 
         hand_strength = self.hand_evaluator.hand_strength(
             my_cards=game_state.scores.player_cards(me.id),
             board=game_state.scores.shared_cards
         )
 
-        self.logger.info("{}: HAND STRENGTH: {}".format(me, hand_strength))
+        self.logger.info("HAND STRENGTH: {}".format(hand_strength))
 
         choices = ["fold", "call", "raise"]
 
@@ -342,7 +305,7 @@ class SmartBetStrategy:
             # Very good hand
             weights = [0.00, 0.20, 0.85]
 
-        self.logger.info("{}: Fold: {}%, Call: {}%, Raise: {}%".format(me, weights[0], weights[1], weights[2]))
+        self.logger.info("Fold: {}%, Call: {}%, Raise: {}%".format(weights[0], weights[1], weights[2]))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         #  DECISION
@@ -364,7 +327,7 @@ class SmartBetStrategy:
         else:
             bet = min(max_bet, game_pot)
 
-        self.logger.info("{}: I decided to {} (${:.2f})".format(me, choice, bet))
+        self.logger.info("Decision: {} ({})".format(choice, "${:.2f}".format(bet) if bet >= 0 else "-1"))
         return bet
 
 
